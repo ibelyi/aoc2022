@@ -34,39 +34,40 @@ fn convert(c: &char) -> u32 {
 use std::collections::HashSet;
 impl Solution {
     fn count(&self, list: &[Vec<char>]) -> u32 {
-        let mut result = 0;
-        for l in list {
-            let mut items: HashSet<char> = HashSet::new();
-            for c in l.iter().take(l.len() / 2) {
-                items.insert(*c);
-            }
-            for c in l.iter().skip(l.len() / 2) {
-                if items.contains(c) {
-                    result += convert(c);
-                    break;
+        list.iter()
+            .map(|l| {
+                let mut sack: HashSet<char> = l.iter().take(l.len() / 2).copied().collect();
+                sack = l
+                    .iter()
+                    .skip(l.len() / 2)
+                    .filter(|c| sack.contains(c))
+                    .copied()
+                    .collect();
+                if sack.len() != 1 {
+                    panic!("Invalid number of matching objects: {}", sack.len());
                 }
-            }
-        }
-        result
+                convert(sack.iter().next().unwrap())
+            })
+            .sum()
     }
 
     fn count2(&self, list: &[Vec<char>]) -> u32 {
-        let mut result = vec![];
-        for g in 0..list.len() / 3 {
-            let mut sacks = [HashSet::new(), HashSet::new(), HashSet::new()];
-            for (i, l) in list.iter().skip(g * 3).take(3).enumerate() {
-                for c in l {
-                    sacks[i].insert(c);
+        let mut result = 0;
+        let mut sack: HashSet<char> = HashSet::new();
+        for (i, l) in list.iter().enumerate() {
+            match i % 3 {
+                0 => sack = l.iter().copied().collect(),
+                1 => sack = l.iter().filter(|c| sack.contains(*c)).copied().collect(),
+                2 => {
+                    sack = l.iter().filter(|c| sack.contains(*c)).copied().collect();
+                    if sack.len() != 1 {
+                        panic!("Invalid number of matching objects: {}", sack.len());
+                    }
+                    result += convert(sack.iter().next().unwrap());
                 }
-            }
-            let mut val: HashSet<&char> = sacks[0].intersection(&sacks[1]).copied().collect();
-            val = val.intersection(&sacks[2]).copied().collect();
-            if val.len() == 1 {
-                result.push(convert(val.iter().next().unwrap()));
-            } else {
-                panic!("Invalid number of common items: {}", val.len());
+                _ => panic!("Impossible!"),
             }
         }
-        result.iter().sum()
+        result
     }
 }
