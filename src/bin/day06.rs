@@ -34,15 +34,21 @@ impl Solver for Solution {
     }
 }
 
+use std::collections::VecDeque;
+
 impl Solution {
     fn count(&self, msg: &str, size: usize) -> usize {
-        let mut prev = vec![];
+        let mut prev = VecDeque::new();
         for (i, c) in msg.chars().enumerate() {
-            while prev.contains(&c) {
-                prev.remove(0);
+            if prev.contains(&c) {
+                while let Some(v) = prev.pop_front() {
+                    if v == c {
+                        break;
+                    }
+                }
             }
             if prev.len() < size - 1 {
-                prev.push(c);
+                prev.push_back(c);
             } else {
                 return i + 1;
             }
