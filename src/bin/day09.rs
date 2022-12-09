@@ -34,14 +34,6 @@ impl Solver for Solution {
 
 use std::collections::HashSet;
 
-fn abs(v: i32) -> i32 {
-    if v < 0 {
-        -v
-    } else {
-        v
-    }
-}
-
 fn act(a: &str, curr: (i32, i32)) -> (i32, i32) {
     match a {
         "U" => (curr.0 + 1, curr.1),
@@ -52,63 +44,26 @@ fn act(a: &str, curr: (i32, i32)) -> (i32, i32) {
     }
 }
 
+use std::cmp::Ordering;
+
 fn mv(curr: (i32, i32), tail: (i32, i32)) -> (i32, i32) {
-    if abs(curr.0 - tail.0) > 1 && abs(curr.1 - tail.1) > 1 {
-        if curr.0 > tail.0 + 1 {
-            if curr.1 > tail.1 + 1 {
-                (tail.0 + 1, tail.1 + 1)
-            } else {
-                (tail.0 + 1, tail.1 - 1)
-            }
-        } else if curr.1 > tail.1 + 1 {
-            (tail.0 - 1, tail.1 + 1)
-        } else {
-            (tail.0 - 1, tail.1 - 1)
-        }
-    } else if abs(curr.0 - tail.0) > 1 || abs(curr.1 - tail.1) > 1 {
-        if curr.0 > tail.0 + 1 {
-            (tail.0 + 1, curr.1)
-        } else if curr.0 < tail.0 - 1 {
-            (tail.0 - 1, curr.1)
-        } else if curr.1 > tail.1 + 1 {
-            (curr.0, tail.1 + 1)
-        } else if curr.1 < tail.1 - 1 {
-            (curr.0, tail.1 - 1)
-        } else {
-            panic!("Invalid condition for tail");
-        }
+    if (curr.0 - tail.0).abs() > 1 || (curr.1 - tail.1).abs() > 1 {
+        (
+            tail.0
+                + match curr.0.cmp(&tail.0) {
+                    Ordering::Greater => 1,
+                    Ordering::Less => -1,
+                    Ordering::Equal => 0,
+                },
+            tail.1
+                + match curr.1.cmp(&tail.1) {
+                    Ordering::Greater => 1,
+                    Ordering::Less => -1,
+                    Ordering::Equal => 0,
+                },
+        )
     } else {
         (tail.0, tail.1)
-    }
-}
-
-fn debug(visited: &HashSet<(i32, i32)>) {
-    let mut min = (0, 0);
-    let mut max = (0, 0);
-    for (y, x) in visited {
-        if *y < min.0 {
-            min.0 = *y;
-        }
-        if *y > max.0 {
-            max.0 = *y;
-        }
-        if *x < min.1 {
-            min.1 = *x;
-        }
-        if *x > max.1 {
-            max.1 = *x;
-        }
-    }
-    let mut field = vec![];
-    for _ in min.0..=max.0 {
-        field.push(vec!['.'; (max.1 - min.1 + 1) as usize]);
-    }
-    for (y, x) in visited {
-        field[(y - min.0) as usize][(x - min.1) as usize] = '#';
-    }
-    println!("Visited");
-    for l in field.iter().rev() {
-        println!("{}", l.iter().collect::<String>());
     }
 }
 
@@ -124,9 +79,6 @@ impl Solution {
                 }
                 visited.insert(rope[rope.len() - 1]);
             }
-        }
-        if visited.len() < 40 {
-            debug(&visited);
         }
         visited.len()
     }
