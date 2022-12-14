@@ -73,7 +73,7 @@ impl Solution {
         let mut visited = HashSet::new();
         for (a, s) in list {
             for _ in 0..*s {
-                rope[0] = act(*a, rope[0]);
+                rope[0] = act(a, rope[0]);
                 for i in 1..rope.len() {
                     rope[i] = mv(rope[i - 1], rope[i]);
                 }
