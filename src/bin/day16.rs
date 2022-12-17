@@ -56,30 +56,24 @@ use std::collections::HashMap;
 fn solve(
     v: usize,
     list: &[Valve],
-    map: &HashMap<String, usize>,
     closed: &[usize],
-    shortest: &HashMap<(usize, usize), usize>,
+    shortest: &[Vec<usize>],
     time: usize,
 ) -> usize {
     let mut result = 0;
     let left = if list[v].rate > 0 { time - 1 } else { time };
     for n in closed.iter() {
-        let r = if let Some(t) = shortest.get(&(v, *n)) {
-            if t + 1 < left {
-                let closed = closed
-                    .iter()
-                    .filter(|v| **v != *n)
-                    .copied()
-                    .collect::<Vec<usize>>();
-                solve(*n, list, map, &closed, shortest, left - t)
-            } else {
-                0
+        let t = shortest[v][*n];
+        if t + 1 < left {
+            let closed = closed
+                .iter()
+                .filter(|v| **v != *n)
+                .copied()
+                .collect::<Vec<usize>>();
+            let r = solve(*n, list, &closed, shortest, left - t);
+            if r > result {
+                result = r;
             }
-        } else {
-            0
-        };
-        if r > result {
-            result = r;
         }
     }
     result + list[v].rate * left
@@ -95,44 +89,35 @@ impl Solution {
                 closed.push(i);
             }
         }
-        let mut shortest = HashMap::new();
-        for v in 0..list.len() {
-            shortest.insert((v, v), 0usize);
+        let mut shortest = vec![vec![list.len(); list.len()]; list.len()];
+        for (v, item) in shortest.iter_mut().enumerate() {
+            item[v] = 0
         }
         let mut changed = true;
         while changed {
             changed = false;
             for v in 0..list.len() {
                 for (n, nv) in list.iter().enumerate() {
-                    let mut new = vec![];
-                    if let Some(p) = shortest.get(&(v, n)) {
+                    if shortest[v][n] < list.len() {
                         for nn in nv.next.iter().map(|v| map.get(v).unwrap()) {
-                            if let Some(vv) = shortest.get(&(v, *nn)) {
-                                if *vv > p + 1 {
-                                    new.push((v, *nn, p + 1));
-                                    changed = true;
-                                }
-                            } else {
-                                new.push((v, *nn, p + 1));
+                            if shortest[v][*nn] > shortest[v][n] + 1 {
+                                shortest[v][*nn] = shortest[v][n] + 1;
+                                shortest[*nn][v] = shortest[n][v] + 1;
                                 changed = true;
                             }
                         }
-                    }
-                    for (x, y, z) in new {
-                        shortest.insert((x, y), z);
-                        shortest.insert((y, x), z);
                     }
                 }
             }
         }
         let start = *map.get("AA").unwrap();
         match step {
-            Step::First => solve(start, list, &map, &closed, &shortest, 30),
+            Step::First => solve(start, list, &closed, &shortest, 30),
             Step::Second => {
                 let mut result = 0;
                 for i in 1..=closed.len() / 2 {
                     let mut stack: Vec<usize> = (0..i).collect();
-                    loop {
+                    'done: loop {
                         let human: Vec<usize> = closed
                             .iter()
                             .enumerate()
@@ -145,12 +130,11 @@ impl Solution {
                             .filter(|(i, _)| !stack.contains(i))
                             .map(|(_, v)| *v)
                             .collect();
-                        let h = solve(start, list, &map, &human, &shortest, 26);
-                        let e = solve(start, list, &map, &elephant, &shortest, 26);
-                        if h + e > result {
-                            result = h + e;
+                        let r = solve(start, list, &human, &shortest, 26)
+                            + solve(start, list, &elephant, &shortest, 26);
+                        if r > result {
+                            result = r;
                         }
-                        let mut done = false;
                         let mut curr = stack.len() - 1;
                         loop {
                             stack[curr] += 1;
@@ -160,17 +144,11 @@ impl Solution {
                             if curr > 0 {
                                 curr -= 1;
                             } else {
-                                done = true;
-                                break;
+                                break 'done;
                             }
                         }
-                        if done {
-                            break;
-                        } else {
-                            while curr + 1 < stack.len() {
-                                stack[curr + 1] = stack[curr] + 1;
-                                curr += 1;
-                            }
+                        for i in curr + 1..stack.len() {
+                            stack[i] = stack[i - 1] + 1;
                         }
                     }
                 }
