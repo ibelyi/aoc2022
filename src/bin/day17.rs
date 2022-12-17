@@ -16,10 +16,7 @@ impl Solver for Solution {
 
     fn solution(&self, step: &Step, input: &[String]) -> String {
         let data: Vec<char> = input[0].chars().collect();
-        match step {
-            Step::First => self.count(&data, step).to_string(),
-            Step::Second => self.count(&data, step).to_string(),
-        }
+        self.count(&data, step).to_string()
     }
 }
 
@@ -50,7 +47,6 @@ impl Solution {
         ];
         let mut field = vec![];
         let mut currw = 0;
-        // let mut prev = 0;
         let end = match step {
             Step::First => 2022,
             Step::Second => 1000000000000,
@@ -58,20 +54,20 @@ impl Solution {
         let mut stat = vec![vec![0; rocks.len()]; wind.len()];
         let mut prev = vec![vec![(0, 0); rocks.len()]; wind.len()];
         let mut extra = 0;
-        let mut i = 0;
-        while i < end {
-            let curr = i % rocks.len();
+        let mut rock = 0;
+        while rock < end {
+            let curr = rock % rocks.len();
             stat[currw][curr] += 1;
             if extra == 0 && stat[currw][curr] > 2 {
-                extra = (field.len() - prev[currw][curr].1) as u64
-                    * ((end - i) / (i - prev[currw][curr].0)) as u64;
-                i = end - (end - i) % (i - prev[currw][curr].0);
-                if i == end {
+                let (rock0, len0) = prev[currw][curr];
+                extra = (field.len() - len0) as u64 * ((end - rock) / (rock - rock0)) as u64;
+                rock = end - (end - rock) % (rock - rock0);
+                if rock == end {
                     break;
                 }
             }
-            prev[currw][curr] = (i, field.len());
-            i += 1;
+            prev[currw][curr] = (rock, field.len());
+            rock += 1;
             for _ in 0..3 {
                 field.push(vec!['.'; 7]);
             }
@@ -166,14 +162,7 @@ impl Solution {
                             }
                         }
                     }
-                    let mut cut = 0usize;
-                    for line in field.iter().rev() {
-                        if line.iter().any(|v| *v != '.') {
-                            break;
-                        }
-                        cut += 1;
-                    }
-                    for _ in 0..cut {
+                    if field[field.len() - 1].iter().all(|v| *v == '.') {
                         field.pop();
                     }
                     hight -= 1;
